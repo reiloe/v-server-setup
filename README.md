@@ -23,7 +23,7 @@ ssh-keygen -t ed25519 -N "" -f <path/to/private-key/private-key-name>
 ```
 
 > [!NOTE]
-> Parameter -N "" is used for preventing a password prompt.
+> Parameter -N "" is used for preventing a passphrase prompt.
 
 ### Upload SSH public key to V-Server
 
