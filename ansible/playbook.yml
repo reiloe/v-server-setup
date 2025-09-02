@@ -1,0 +1,90 @@
+- name: Prepare V-Server
+  hosts: vserver
+  become: true
+
+  vars:
+    SSHD_CONFIG: "/etc/ssh/sshd_config"
+    SSHD_CONFIG_UBUNTU_2024: "/etc/ssh/sshd_config.d/50-cloud-init.conf"
+
+  tasks:
+
+    - name: Prevent Authentication via username password for ssh
+      tags: configuration, ssh
+      command: sed -i'.bak' 's/#PasswordAuthentication yes/PasswordAuthentication no/g' {{ SSHD_CONFIG }}
+
+    - name: Check if file exists
+      stat:
+        path: "{{ SSHD_CONFIG_UBUNTU_2024 }}"
+      register: result
+
+    - name: Prevent authentication via username password for ssh (Ubuntu as of Jan 2024)
+      tags: configutaion, ssh
+      command: sed -i'.bak' 's/PasswordAuthentication yes/PasswordAuthentication no/g' {{ SSHD_CONFIG_UBUNTU_2024 }}
+      when: result.stat.exists
+
+    - name: Restart service ssh
+      tags: configuration, ssh
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+    
+    - name: Update cache and upgrade packages
+      tags: installation, update, upgrade
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 6000
+        name: "*"
+        state: latest
+
+    - name: Install nginx
+      tags: installation, webserver, nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+
+    - name: Create a directory for an alternative index page
+      tags: configuration, webserver, nginx
+      ansible.builtin.file:
+        path: /var/www/alternatives
+        state: directory
+        mode: '0755'
+
+    - name: Copy the alternative index page to nginx
+      tags: configuration, webserver, nginx
+      ansible.builtin.copy:
+        src: ../remote_files/alternate-index.html
+        dest: /var/www/alternatives
+        mode: '0644'
+
+    - name: Copy the configuration for the alternative index page to nginx
+      tags: configuration, webserver, nginx
+      ansible.builtin.copy:
+        src: ../remote_files/alternatives
+        dest: /etc/nginx/sites-enabled
+        mode: '0644'
+
+    - name: Restart nginx
+      tags: configuration, nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+
+    - name: Check if git is installed
+      tags: installation, git
+      shell: command -v git
+      register: git_installed
+      ignore_errors: yes
+
+    - name: Install git if not present
+      ansible.builtin.apt:
+        name: git
+        state: latest
+        update_cache: yes
+      when: git_installed is failed
+
+    - name: Configure git
+      tags: configuration, git
+      become: false
+      script: ../remote_files/git_config.sh
+

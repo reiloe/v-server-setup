@@ -1,0 +1,3 @@
+Host #VSERVER-IP
+  HostName #VSERVER-IP
+  User #USERNAME

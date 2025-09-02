@@ -1,0 +1,11 @@
+server {
+    listen 8081;
+    listen [::]:8081;
+
+    root /var/www/alternatives;
+    index alternate-index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
