@@ -48,8 +48,6 @@ If the setup of SSH key pair, including login check, was successfuly disable USE
 > [!CAUTION]
 > The config file is named sshd_config and can be found at /etc/ssh
 
-#### Method 1
-
 Open the sshd_config file, search for:
 
 ```text
@@ -60,14 +58,6 @@ uncomment this line and change yes to no.
 
 ```text
 PasswordAuthentication no
-```
-
-#### Method 2
-
-By using the following command:
-
-```bash
-sed -i'.bak' 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
 ```
 
 > [!Tip]
@@ -87,10 +77,10 @@ The message “Permission denied (publickey)” should be displayed.
 
 ```text
 Host <VServer-IP>
-  User <SSH username>
-  HostName <VServer-IP>
-  IdentityFile <path/to/private-key/private-key-name>
-  ```
+    User <SSH username>
+    HostName <VServer-IP>
+    IdentityFile <path/to/private-key/private-key-name>
+```
 
 [^1]: Pay attention to the indentation
 
@@ -133,24 +123,7 @@ Then create a file named alternate-index.html in thid folder and open it with an
 sudo nano /var/www/alternatives/alternate-index.html
 ```
 
-Fill in some html code
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Alternative Index</title>
-  </head>
-  <body>
-    <main>
-        <h1>Welcome on alternative index site</h1>  
-    </main>
-  </body>
-</html>
-```
+Fill in some html code. For example see [alternate-index.html](remote_files/alternate-index.html)
 
 Save and exit the editor by pressing STRG-O followed by pressing STRG-X
 
@@ -161,24 +134,10 @@ To do this, you can also open the editor directly by specifying a file name. The
 sudo nano /etc/nginx/sites-enabled/alternate
 ```
 
-Paste in the following content:
-
-```text
-server {
-    listen 8081;
-    listen [::]:8081;
-
-    root /var/www/alternatives;
-    index alternate-index.html;
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-```
+For an example take a look at [alternatives](remote-files/alternates)  
 
 > [!Note]
-> This code tells NGINX to listen on Port 8081 for incomming requests
+> The code in that file tells NGINX to listen on Port 8081 for incomming requests
 
 Save and exit the editor by pressing STRG-O followed by pressing STRG-X
 
