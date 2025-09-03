@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 ###################################################################
 # Setup script                                                    #
@@ -28,6 +28,7 @@ if ! test -d "$SSH_KEY_FOLDER"; then
   echo "Create folder to store the keys..."
   mkdir -p SSH_KEY_FOLDER
 fi
+
 ###################################################################
 # SSH                                                             #
 ###################################################################
@@ -41,18 +42,17 @@ confirm() {
         case $REPLY in
             [Yy] ) return 0;;
             [Nn] ) return 1;;
-            * ) echo "Invalid response.";;
+            * ) echo "Invalid key pressed.";;
         esac
     done
 }
 
-create_ssh_key(){
-    ssh-keygen -t ed25519 -N "" -f $SSH_KEY_FOLDER/da_vserver_"$1"
-}
+create_and_upload_ssh_key(){
+    echo "Create SSH-KEY for environment: $ENVIRONMENT..."
+    ssh-keygen -t ed25519 -N "" -f $SSH_KEY_FOLDER/da_vserver_"$ENVIRONMENT"
 
-upload_ssh_key(){
-  echo "Upload SSH-KEY to $VSERVER ..."
-  ssh-copy-id -i  $SSH_KEY_FOLDER/da_vserver_"$ENVIRONMENT".pub -o StrictHostKeyChecking=no "${CONN}"
+    echo "Upload SSH-KEY to $VSERVER ..."
+    ssh-copy-id -i  $SSH_KEY_FOLDER/da_vserver_"$ENVIRONMENT".pub -o StrictHostKeyChecking=no "${CONN}"
 }
 
 if test -f "$FILE"; then
@@ -61,40 +61,67 @@ if test -f "$FILE"; then
         echo "Overwrite keys..."
         /bin/rm -f "$FILE"
         /bin/rm -f "$FILE.pub"
-        create_ssh_key "$ENVIRONMENT"
-        upload_ssh_key  
+        create_and_upload_ssh_key  
     else
-    echo "Cancelled."
+        echo "Creation of SSH keys cancelled!!!"
     fi
 else
-    echo "Create SSH-KEY for environment: $ENVIRONMENT..."
-    create_ssh_key "$ENVIRONMENT"
-    upload_ssh_key
+    create_and_upload_ssh_key
 fi
 
-# Replace placeholder for V-SERVER IP in inventory-File
-# Creates a backup of original inventory file
-echo "Configure inventory.yml file ..."
-sed -i'.bak' "s/#VSERVER-IP/$VSERVER/g" ansible/inventory.yml
+create_ssh_configuration_file_for_env(){
+    \cp -f ssh_configuration ssh_configuration_"$ENVIRONMENT"
+    sed -i'.bak' -e "s/#VSERVER-IP/$VSERVER/g" -e "s/#USERNAME/$USERNAME/g" -e "s|#KEYPATH|$SSH_KEY_FOLDER/da_vserver_$ENVIRONMENT|g" ssh_configuration_"$ENVIRONMENT"
+    \rm -f  ssh_configuration_"$ENVIRONMENT".bak
+}
 
-# Replace placeholder for V-SERVER IP and USERNAME in ssh_config-File
-# Creates a backup of original ssh_configuration file
-echo "Configure ssh_configuration file ..."
-sed -i'.bak' -e "s/#VSERVER-IP/$VSERVER/g" -e "s/#USERNAME/$USERNAME/g" -e "s/#KEYPATH/$SSH_KEY_FOLDER/da_vserver_$ENVIRONMENT/g" ssh_configuration
+if test -f "ssh_configuration_$ENVIRONMENT"; then
+    if confirm "Do you want to overwrite SSH client settings for $ENVIRONMENT?"; then
+        create_ssh_configuration_file_for_env
+    fi
+else
+    create_ssh_configuration_file_for_env
+fi
 
 # Include the new configuration file in config of ssh
-# Creates a backup of original config file"
-echo "# Include the new configuration file in config ..."
-sed -i'.bak' '1 i\
-Include ~/DeveloperAkademie/Spielwiese/vserver/ssh_ssh_configuration
+if ! grep -q "ssh_configuration_$ENVIRONMENT" ~/.ssh/config; then
+    echo "# Include the new configuration file in config ..."
+    
+    sed -i'.bak' '1 i\
+Include\ ~\/DeveloperAkademie\/Spielwiese\/vserver\/ssh_configuration_#ENVIRONMENT
 ' ~/.ssh/config
+    sed -i'.bak' "s/#ENVIRONMENT/$ENVIRONMENT/g" ~/.ssh/config
+fi
 
 ###################################################################
 # GIT                                                             #
 ###################################################################
 
-echo "Configure git file ..."
+GIT_USER=$(git config user.name)
+GIT_USER_EMAIL=$(git config user.email)
+
+echo "Configure git file..."
 sed -i'.bak' -e "s/#GIT_USER/$GIT_USER/g" \
 -e "s/#GIT_EMAIL/$GIT_USER_EMAIL/g" remote_files/git_config.sh
 
-cd ansible && ansible-playbook -i inventory.yml playbook.yml -K
+
+###################################################################
+# Ansible                                                         #
+###################################################################
+
+if confirm "Do you want to setup the server on $ENVIRONMENT?"; then
+    echo "Running ansible..."
+    # Check if backup file (with placeholders) exists.
+    # If the file exists, bla also exists and is already configured.
+    if ! test -f "ansible/inventory_$ENVIRONMENT.yml.bak"; then
+        rm -rf ansible/inventory_"$ENVIRONMENT".yml
+        mv ansible/inventory_"$ENVIRONMENT".yml.bak ansible/inventory_"$ENVIRONMENT".yml
+    fi
+
+    # Replace placeholder for V-SERVER IP in inventory-File
+    # Creates a backup of original inventory file
+    sed -i'.bak' "s/#VSERVER-IP/$VSERVER/g" ansible/inventory_"$ENVIRONMENT".yml
+    cd ansible && ansible-playbook -i inventory_"$ENVIRONMENT".yml playbook.yml -K  
+else
+    echo "Setup of $ENVIRONMENT environment cancelled!!!"
+fi
