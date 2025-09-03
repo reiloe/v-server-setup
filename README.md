@@ -206,7 +206,7 @@ If you want to automate the setup (e.g., because you often want to set up server
 > The code in the scripts was tested on a Mac. The VM for testing was a Ubuntu Server 24.04.3 LTS on Parallels Desktop.
 > Because of Mac some Shell commands are differend (syntax and formatting)
 
-To autmate the process I have created a shell script named setup_prerequisites.sh which do the following:  
+To automate the process I have created a shell script named `setup_prerequisites.sh` which does the following:  
 
 - Input check (You have to input the username and ip for the V-Server as argument)
 - Creation of SSH key pair
