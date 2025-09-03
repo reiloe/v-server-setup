@@ -60,6 +60,12 @@ uncomment this line and change yes to no.
 PasswordAuthentication no
 ```
 
+Restart the SSH service for the changes to take effect.
+
+```bash
+sudo systemsctl restart ssh
+```
+
 > [!Tip]
 > To check that login with username/password is not longer possible logout from V-Server and run following code
 
