@@ -43,7 +43,7 @@ ssh -o "IdentitiesOnly=yes" -i  ~/.ssh/da_vserver/da_vserver <vserver-ip>
 
 ### Disable USERNAME/PASSWORD login
 
-If the setup of SSH key pair, including login check, was successfuly disable USERNAME/PASSWORD login. For that adapt the config file of the SSH server.
+If the setup of SSH key pair, including login check was successful, disable USERNAME/PASSWORD login. For that adapt the config file of the SSH server.
 
 > [!CAUTION]
 > The config file is named sshd_config and can be found at /etc/ssh
