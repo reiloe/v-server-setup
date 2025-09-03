@@ -227,7 +227,7 @@ The Ansible Playbook is very basic with following tasks:
 
 ## Tips
 
-Create an alias for the SSH connection so you dont need typing the whole command.
+Create an alias for the SSH connection so you don't need typing the whole command.
 
 ```text
 Replace username with your username of the V-Server and vserver-ip with ip or domain of the V-Server
